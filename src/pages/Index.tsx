@@ -7,9 +7,10 @@ import { AddReleasePage } from '@/components/AddReleasePage';
 import { AnalyticsPage } from '@/components/AnalyticsPage';
 import { ProfilePage } from '@/components/ProfilePage';
 import { DraftsPage } from '@/components/DraftsPage';
+import { SupportPage } from '@/components/SupportPage';
 import { Release } from '@/types';
 
-type Page = 'catalog' | 'add-release' | 'analytics' | 'profile' | 'drafts';
+type Page = 'catalog' | 'add-release' | 'analytics' | 'profile' | 'drafts' | 'support';
 
 const MainApp = () => {
   const { currentUser } = useApp();
@@ -27,7 +28,7 @@ const MainApp = () => {
 
   const handleSaveRelease = () => {
     setEditingRelease(null);
-    setCurrentPage('drafts');
+    setCurrentPage('catalog');
   };
 
   return (
@@ -39,10 +40,11 @@ const MainApp = () => {
         }
       }} />
       <main className="flex-1 overflow-y-auto">
-        {currentPage === 'catalog' && <CatalogPage />}
+        {currentPage === 'catalog' && <CatalogPage onEdit={handleEdit} />}
         {currentPage === 'drafts' && <DraftsPage onEdit={handleEdit} />}
         {currentPage === 'add-release' && <AddReleasePage editingRelease={editingRelease} onSave={handleSaveRelease} />}
         {currentPage === 'analytics' && <AnalyticsPage />}
+        {currentPage === 'support' && <SupportPage />}
         {currentPage === 'profile' && <ProfilePage />}
       </main>
     </div>

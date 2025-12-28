@@ -7,17 +7,28 @@ import Icon from '@/components/ui/icon';
 import { Release } from '@/types';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
-export const CatalogPage = () => {
-  const { currentUser, releases, updateRelease } = useApp();
+interface CatalogPageProps {
+  onEdit?: (release: Release) => void;
+}
+
+export const CatalogPage: React.FC<CatalogPageProps> = ({ onEdit }) => {
+  const { currentUser, releases, updateRelease, deleteRelease } = useApp();
   const [selectedRelease, setSelectedRelease] = React.useState<Release | null>(null);
   const [rejectionReason, setRejectionReason] = React.useState('');
   const [showRejectDialog, setShowRejectDialog] = React.useState(false);
+  const [showApproveDialog, setShowApproveDialog] = React.useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
+  const [upcInput, setUpcInput] = React.useState('');
+  const [isrcInputs, setIsrcInputs] = React.useState<Record<string, string>>({});
 
   const userReleases = currentUser?.isAdmin
     ? releases.filter((r) => r.status === 'moderation')
-    : releases.filter((r) => r.userId === currentUser?.id);
+    : releases.filter((r) => r.userId === currentUser?.id && (r.status === 'moderation' || r.status === 'approved' || r.status === 'rejected'));
 
   const getStatusColor = (status: Release['status']) => {
     switch (status) {
@@ -45,10 +56,40 @@ export const CatalogPage = () => {
     }
   };
 
-  const handleApprove = (release: Release) => {
-    updateRelease(release.id, { status: 'approved' });
+  const handleApprove = () => {
+    if (!selectedRelease) return;
+
+    const updatedTracks = selectedRelease.tracks.map((t) => ({
+      ...t,
+      isrc: isrcInputs[t.id] || t.isrc,
+    }));
+
+    updateRelease(selectedRelease.id, {
+      status: 'approved',
+      upc: upcInput || selectedRelease.upc,
+      tracks: updatedTracks,
+    });
+    
     setSelectedRelease(null);
+    setShowApproveDialog(false);
+    setUpcInput('');
+    setIsrcInputs({});
     toast.success('Релиз одобрен!');
+  };
+
+  const handleDelete = () => {
+    if (selectedRelease) {
+      deleteRelease(selectedRelease.id);
+      setSelectedRelease(null);
+      setShowDeleteDialog(false);
+      toast.success('Релиз удалён');
+    }
+  };
+
+  const handleEditRejected = (release: Release) => {
+    if (onEdit) {
+      onEdit(release);
+    }
   };
 
   const handleReject = () => {
@@ -187,9 +228,31 @@ export const CatalogPage = () => {
                     <Icon name="X" size={18} className="mr-2" />
                     Отклонить
                   </Button>
-                  <Button onClick={() => handleApprove(selectedRelease)} className="flex-1 gradient-purple text-white">
+                  <Button onClick={() => setShowApproveDialog(true)} className="flex-1 gradient-purple text-white">
                     <Icon name="Check" size={18} className="mr-2" />
                     Одобрить
+                  </Button>
+                </div>
+              )}
+
+              {!currentUser?.isAdmin && selectedRelease.status === 'approved' && (
+                <div className="pt-4 border-t">
+                  <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} className="w-full">
+                    <Icon name="Trash2" size={18} className="mr-2" />
+                    Удалить релиз
+                  </Button>
+                </div>
+              )}
+
+              {!currentUser?.isAdmin && selectedRelease.status === 'rejected' && (
+                <div className="flex gap-3 pt-4 border-t">
+                  <Button variant="outline" onClick={() => handleEditRejected(selectedRelease)} className="flex-1">
+                    <Icon name="Edit" size={18} className="mr-2" />
+                    Редактировать
+                  </Button>
+                  <Button variant="destructive" onClick={() => setShowDeleteDialog(true)} className="flex-1">
+                    <Icon name="Trash2" size={18} className="mr-2" />
+                    Удалить
                   </Button>
                 </div>
               )}
@@ -220,6 +283,68 @@ export const CatalogPage = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Одобрить релиз</DialogTitle>
+            <DialogDescription>Заполните UPC и ISRC (можно сделать позже)</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="upc-input">UPC альбома</Label>
+              <Input
+                id="upc-input"
+                value={upcInput}
+                onChange={(e) => setUpcInput(e.target.value)}
+                placeholder="Введите UPC"
+              />
+            </div>
+
+            <div className="space-y-3">
+              <Label>ISRC треков</Label>
+              {selectedRelease?.tracks.map((track, index) => (
+                <div key={track.id} className="flex items-center gap-3">
+                  <span className="text-sm font-mono w-8">{String(index + 1).padStart(2, '0')}</span>
+                  <span className="text-sm flex-1 truncate">{track.name}</span>
+                  <Input
+                    value={isrcInputs[track.id] || track.isrc || ''}
+                    onChange={(e) => setIsrcInputs({ ...isrcInputs, [track.id]: e.target.value })}
+                    placeholder="ISRC"
+                    className="w-48"
+                  />
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-3 pt-4">
+              <Button variant="outline" onClick={() => setShowApproveDialog(false)} className="flex-1">
+                Отмена
+              </Button>
+              <Button onClick={handleApprove} className="flex-1 gradient-purple text-white">
+                Одобрить
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить релиз?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие нельзя отменить. Релиз "{selectedRelease?.albumName}" будет удалён навсегда.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Удалить
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

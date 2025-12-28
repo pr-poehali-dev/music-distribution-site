@@ -22,6 +22,8 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
   const [albumName, setAlbumName] = useState(editingRelease?.albumName || '');
   const [artistName, setArtistName] = useState(editingRelease?.artistName || '');
   const [releaseDate, setReleaseDate] = useState(editingRelease?.releaseDate || '');
+  const [oldReleaseDate, setOldReleaseDate] = useState(editingRelease?.oldReleaseDate || '');
+  const [upc, setUpc] = useState(editingRelease?.upc || '');
   const [genre, setGenre] = useState(editingRelease?.genre || '');
   const [coverImage, setCoverImage] = useState<string | null>(editingRelease?.coverImage || null);
   const [tracks, setTracks] = useState<Track[]>(editingRelease?.tracks || []);
@@ -52,8 +54,8 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
     setTracks([...tracks, newTrack]);
   };
 
-  const handleTrackChange = (id: string, name: string) => {
-    setTracks(tracks.map((t) => (t.id === id ? { ...t, name } : t)));
+  const handleTrackChange = (id: string, field: string, value: any) => {
+    setTracks(tracks.map((t) => (t.id === id ? { ...t, [field]: value } : t)));
   };
 
   const handleTrackFileUpload = (id: string, file: File) => {
@@ -74,22 +76,29 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
   };
 
   const canProceedToStep2 = albumName && artistName && releaseDate && genre && coverImage;
-  const canSubmit = canProceedToStep2 && tracks.length > 0 && tracks.every((t) => t.name && t.file);
+  const canSubmit = canProceedToStep2 && tracks.length > 0 && tracks.every((t) => 
+    t.name && t.file && t.musicAuthor && t.lyricsAuthor && t.performers && t.language && t.hasProfanity !== undefined
+  );
 
   const handleSubmit = (submitToModeration: boolean) => {
     if (!currentUser) return;
+
+    const isComplete = canSubmit;
+    const finalStatus = submitToModeration && isComplete ? 'moderation' : 'draft';
 
     if (releaseId) {
       updateRelease(releaseId, {
         albumName,
         artistName,
         releaseDate,
+        oldReleaseDate,
+        upc,
         genre,
         coverImage,
         tracks,
-        status: submitToModeration ? 'moderation' : 'draft',
+        status: finalStatus,
       });
-      toast.success(submitToModeration ? 'Релиз отправлен на модерацию!' : 'Черновик обновлён');
+      toast.success(finalStatus === 'moderation' ? 'Релиз отправлен на модерацию!' : 'Черновик обновлён');
     } else {
       const newRelease: Release = {
         id: `release-${Date.now()}`,
@@ -97,15 +106,17 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
         albumName,
         artistName,
         releaseDate,
+        oldReleaseDate,
+        upc,
         genre,
         coverImage,
         tracks,
-        status: submitToModeration ? 'moderation' : 'draft',
+        status: finalStatus,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
       addRelease(newRelease);
-      toast.success(submitToModeration ? 'Релиз отправлен на модерацию!' : 'Релиз сохранён как черновик');
+      toast.success(finalStatus === 'moderation' ? 'Релиз отправлен на модерацию!' : 'Релиз сохранён как черновик');
     }
     
     setShowPreview(false);
@@ -150,8 +161,18 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="upc">UPC</Label>
+              <Input id="upc" value={upc} onChange={(e) => setUpc(e.target.value)} placeholder="Необязательно" />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="releaseDate">Дата релиза *</Label>
               <Input id="releaseDate" type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} min="1900-01-01" max="2100-12-31" />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="oldReleaseDate">Старая дата релиза (если был)</Label>
+              <Input id="oldReleaseDate" type="date" value={oldReleaseDate} onChange={(e) => setOldReleaseDate(e.target.value)} min="1900-01-01" max="2100-12-31" />
             </div>
 
             <div className="space-y-2">
@@ -236,12 +257,12 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Название трека</Label>
-                  <Input value={track.name} onChange={(e) => handleTrackChange(track.id, e.target.value)} placeholder="Название трека" />
+                  <Label>Название трека *</Label>
+                  <Input value={track.name} onChange={(e) => handleTrackChange(track.id, 'name', e.target.value)} placeholder="Название трека" />
                 </div>
 
                 <div className="space-y-2">
-                  <Label>Аудиофайл</Label>
+                  <Label>Аудиофайл *</Label>
                   <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary transition-colors cursor-pointer" onClick={() => document.getElementById(`audio-${track.id}`)?.click()}>
                     {track.file ? (
                       <div className="flex items-center justify-center gap-2">
@@ -266,8 +287,69 @@ export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, 
                     />
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>ФИО автора музыки *</Label>
+                    <Input value={track.musicAuthor || ''} onChange={(e) => handleTrackChange(track.id, 'musicAuthor', e.target.value)} placeholder="Иванов И.И." />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ФИО автора слов *</Label>
+                    <Input value={track.lyricsAuthor || ''} onChange={(e) => handleTrackChange(track.id, 'lyricsAuthor', e.target.value)} placeholder="Петров П.П." />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Исполнители трека *</Label>
+                  <Input value={track.performers || ''} onChange={(e) => handleTrackChange(track.id, 'performers', e.target.value)} placeholder="Имя исполнителя" />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Продюсеры</Label>
+                  <Input value={track.producers || ''} onChange={(e) => handleTrackChange(track.id, 'producers', e.target.value)} placeholder="Необязательно" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Язык песни *</Label>
+                    <Select value={track.language || ''} onValueChange={(value) => handleTrackChange(track.id, 'language', value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите язык" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Русский">Русский</SelectItem>
+                        <SelectItem value="Английский">Английский</SelectItem>
+                        <SelectItem value="Инструментал">Инструментал</SelectItem>
+                        <SelectItem value="Другой">Другой</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Есть ли мат? *</Label>
+                    <Select value={track.hasProfanity === undefined ? '' : track.hasProfanity ? 'yes' : 'no'} onValueChange={(value) => handleTrackChange(track.id, 'hasProfanity', value === 'yes')}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выберите" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="no">Нет</SelectItem>
+                        <SelectItem value="yes">Да</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Момент TikTok</Label>
+                    <Input value={track.tiktokMoment || ''} onChange={(e) => handleTrackChange(track.id, 'tiktokMoment', e.target.value)} placeholder="00:30 (необязательно)" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ISRC</Label>
+                    <Input value={track.isrc || ''} onChange={(e) => handleTrackChange(track.id, 'isrc', e.target.value)} placeholder="Необязательно" />
+                  </div>
+                </div>
               </div>
-            ))}
+            ))
 
             <Button onClick={handleAddTrack} variant="outline" className="w-full h-12">
               <Icon name="Plus" size={20} className="mr-2" />

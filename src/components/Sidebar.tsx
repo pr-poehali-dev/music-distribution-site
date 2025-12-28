@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 
-type Page = 'catalog' | 'add-release' | 'analytics' | 'profile' | 'drafts';
+type Page = 'catalog' | 'add-release' | 'analytics' | 'profile' | 'drafts' | 'support';
 
 interface SidebarProps {
   currentPage: Page;
@@ -19,6 +19,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
     { id: 'drafts' as Page, label: 'Черновики', icon: 'FileEdit', hidden: currentUser?.isAdmin },
     { id: 'add-release' as Page, label: 'Добавить релиз', icon: 'Plus', hidden: currentUser?.isAdmin },
     { id: 'analytics' as Page, label: 'Аналитика', icon: 'BarChart3' },
+    { id: 'support' as Page, label: currentUser?.isAdmin ? 'Тикеты' : 'Поддержка', icon: 'MessageSquare' },
     { id: 'profile' as Page, label: 'Профиль', icon: 'User' },
   ];
 

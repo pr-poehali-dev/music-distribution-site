@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { User, Release, AppContextType } from '@/types';
+import { User, Release, Ticket, AppContextType } from '@/types';
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -16,6 +16,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [users, setUsers] = useState<User[]>([ADMIN_USER]);
   const [releases, setReleases] = useState<Release[]>([]);
+  const [tickets, setTickets] = useState<Ticket[]>([]);
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -29,6 +30,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const savedReleases = localStorage.getItem('kedoo_releases');
     if (savedReleases) {
       setReleases(JSON.parse(savedReleases));
+    }
+
+    const savedTickets = localStorage.getItem('kedoo_tickets');
+    if (savedTickets) {
+      setTickets(JSON.parse(savedTickets));
     }
 
     const savedTheme = localStorage.getItem('kedoo_theme') as 'light' | 'dark' | null;
@@ -45,6 +51,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     localStorage.setItem('kedoo_releases', JSON.stringify(releases));
   }, [releases]);
+
+  useEffect(() => {
+    localStorage.setItem('kedoo_tickets', JSON.stringify(tickets));
+  }, [tickets]);
 
   const addUser = (user: User) => {
     setUsers((prev) => [...prev, user]);
@@ -66,6 +76,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setReleases((prev) => prev.filter((r) => r.id !== id));
   };
 
+  const addTicket = (ticket: Ticket) => {
+    setTickets((prev) => [...prev, ticket]);
+  };
+
+  const updateTicket = (id: string, updates: Partial<Ticket>) => {
+    setTickets((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, ...updates } : t))
+    );
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -84,10 +104,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setCurrentUser,
         users,
         releases,
+        tickets,
         addUser,
         addRelease,
         updateRelease,
         deleteRelease,
+        addTicket,
+        updateTicket,
         theme,
         toggleTheme,
       }}
