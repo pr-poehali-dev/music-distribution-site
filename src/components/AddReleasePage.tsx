@@ -3,6 +3,7 @@ import { useApp } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import Icon from '@/components/ui/icon';
 import { Release, Track } from '@/types';
@@ -136,12 +137,48 @@ export const AddReleasePage = () => {
 
             <div className="space-y-2">
               <Label htmlFor="releaseDate">Дата релиза *</Label>
-              <Input id="releaseDate" type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} />
+              <Input id="releaseDate" type="date" value={releaseDate} onChange={(e) => setReleaseDate(e.target.value)} min="1900-01-01" max="2100-12-31" />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="genre">Жанр *</Label>
-              <Input id="genre" value={genre} onChange={(e) => setGenre(e.target.value)} placeholder="Pop, Rock, Hip-Hop..." />
+              <Select value={genre} onValueChange={setGenre}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Выберите жанр" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pop">Pop</SelectItem>
+                  <SelectItem value="Rock">Rock</SelectItem>
+                  <SelectItem value="Hip-Hop">Hip-Hop</SelectItem>
+                  <SelectItem value="Rap">Rap</SelectItem>
+                  <SelectItem value="Electronic">Electronic</SelectItem>
+                  <SelectItem value="Dance">Dance</SelectItem>
+                  <SelectItem value="House">House</SelectItem>
+                  <SelectItem value="Techno">Techno</SelectItem>
+                  <SelectItem value="Dubstep">Dubstep</SelectItem>
+                  <SelectItem value="R&B">R&B</SelectItem>
+                  <SelectItem value="Soul">Soul</SelectItem>
+                  <SelectItem value="Jazz">Jazz</SelectItem>
+                  <SelectItem value="Blues">Blues</SelectItem>
+                  <SelectItem value="Country">Country</SelectItem>
+                  <SelectItem value="Folk">Folk</SelectItem>
+                  <SelectItem value="Classical">Classical</SelectItem>
+                  <SelectItem value="Metal">Metal</SelectItem>
+                  <SelectItem value="Punk">Punk</SelectItem>
+                  <SelectItem value="Indie">Indie</SelectItem>
+                  <SelectItem value="Alternative">Alternative</SelectItem>
+                  <SelectItem value="Reggae">Reggae</SelectItem>
+                  <SelectItem value="Latin">Latin</SelectItem>
+                  <SelectItem value="World">World</SelectItem>
+                  <SelectItem value="Ambient">Ambient</SelectItem>
+                  <SelectItem value="Trap">Trap</SelectItem>
+                  <SelectItem value="Drill">Drill</SelectItem>
+                  <SelectItem value="K-Pop">K-Pop</SelectItem>
+                  <SelectItem value="J-Pop">J-Pop</SelectItem>
+                  <SelectItem value="Phonk">Phonk</SelectItem>
+                  <SelectItem value="Другое">Другое</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-2">
