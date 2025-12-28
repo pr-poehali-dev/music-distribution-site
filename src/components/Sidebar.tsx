@@ -4,7 +4,7 @@ import Icon from '@/components/ui/icon';
 import { useApp } from '@/context/AppContext';
 import { cn } from '@/lib/utils';
 
-type Page = 'catalog' | 'add-release' | 'analytics' | 'profile';
+type Page = 'catalog' | 'add-release' | 'analytics' | 'profile' | 'drafts';
 
 interface SidebarProps {
   currentPage: Page;
@@ -16,6 +16,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ currentPage, onNavigate }) => 
 
   const menuItems = [
     { id: 'catalog' as Page, label: currentUser?.isAdmin ? 'Модерация' : 'Мои релизы', icon: 'Library' },
+    { id: 'drafts' as Page, label: 'Черновики', icon: 'FileEdit', hidden: currentUser?.isAdmin },
     { id: 'add-release' as Page, label: 'Добавить релиз', icon: 'Plus', hidden: currentUser?.isAdmin },
     { id: 'analytics' as Page, label: 'Аналитика', icon: 'BarChart3' },
     { id: 'profile' as Page, label: 'Профиль', icon: 'User' },

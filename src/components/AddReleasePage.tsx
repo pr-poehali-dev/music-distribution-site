@@ -10,15 +10,21 @@ import { Release, Track } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
 
-export const AddReleasePage = () => {
-  const { currentUser, addRelease } = useApp();
+interface AddReleasePageProps {
+  editingRelease?: Release | null;
+  onSave?: () => void;
+}
+
+export const AddReleasePage: React.FC<AddReleasePageProps> = ({ editingRelease, onSave }) => {
+  const { currentUser, addRelease, updateRelease } = useApp();
   const [step, setStep] = useState(1);
-  const [albumName, setAlbumName] = useState('');
-  const [artistName, setArtistName] = useState('');
-  const [releaseDate, setReleaseDate] = useState('');
-  const [genre, setGenre] = useState('');
-  const [coverImage, setCoverImage] = useState<string | null>(null);
-  const [tracks, setTracks] = useState<Track[]>([]);
+  const [releaseId] = useState(editingRelease?.id || '');
+  const [albumName, setAlbumName] = useState(editingRelease?.albumName || '');
+  const [artistName, setArtistName] = useState(editingRelease?.artistName || '');
+  const [releaseDate, setReleaseDate] = useState(editingRelease?.releaseDate || '');
+  const [genre, setGenre] = useState(editingRelease?.genre || '');
+  const [coverImage, setCoverImage] = useState<string | null>(editingRelease?.coverImage || null);
+  const [tracks, setTracks] = useState<Track[]>(editingRelease?.tracks || []);
   const [showPreview, setShowPreview] = useState(false);
 
   const handleCoverUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -73,38 +79,46 @@ export const AddReleasePage = () => {
   const handleSubmit = (submitToModeration: boolean) => {
     if (!currentUser) return;
 
-    const newRelease: Release = {
-      id: `release-${Date.now()}`,
-      userId: currentUser.id,
-      albumName,
-      artistName,
-      releaseDate,
-      genre,
-      coverImage,
-      tracks,
-      status: submitToModeration ? 'moderation' : 'draft',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    addRelease(newRelease);
-    toast.success(submitToModeration ? 'Релиз отправлен на модерацию!' : 'Релиз сохранён как черновик');
+    if (releaseId) {
+      updateRelease(releaseId, {
+        albumName,
+        artistName,
+        releaseDate,
+        genre,
+        coverImage,
+        tracks,
+        status: submitToModeration ? 'moderation' : 'draft',
+      });
+      toast.success(submitToModeration ? 'Релиз отправлен на модерацию!' : 'Черновик обновлён');
+    } else {
+      const newRelease: Release = {
+        id: `release-${Date.now()}`,
+        userId: currentUser.id,
+        albumName,
+        artistName,
+        releaseDate,
+        genre,
+        coverImage,
+        tracks,
+        status: submitToModeration ? 'moderation' : 'draft',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      addRelease(newRelease);
+      toast.success(submitToModeration ? 'Релиз отправлен на модерацию!' : 'Релиз сохранён как черновик');
+    }
     
-    setAlbumName('');
-    setArtistName('');
-    setReleaseDate('');
-    setGenre('');
-    setCoverImage(null);
-    setTracks([]);
-    setStep(1);
     setShowPreview(false);
+    if (onSave) {
+      onSave();
+    }
   };
 
   return (
     <div className="p-8 max-w-4xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-2">Добавить релиз</h1>
-        <p className="text-muted-foreground text-lg">Загрузите свою музыку в kedoo</p>
+        <h1 className="text-4xl font-bold mb-2">{releaseId ? 'Редактировать релиз' : 'Добавить релиз'}</h1>
+        <p className="text-muted-foreground text-lg">{releaseId ? 'Измените информацию о релизе' : 'Загрузите свою музыку в kedoo'}</p>
       </div>
 
       <div className="flex items-center justify-center mb-8">
